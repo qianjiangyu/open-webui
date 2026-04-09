@@ -254,7 +254,38 @@ export const updateLdapServer = async (token: string = '', body: object) => {
 	return res;
 };
 
-export const userSignIn = async (email: string, password: string) => {
+export const getCaptcha = async () => {
+	let error = null;
+
+	const res = await fetch(`${WEBUI_API_BASE_URL}/auths/captcha`, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json'
+		}
+	})
+		.then(async (res) => {
+			if (!res.ok) throw await res.json();
+			return res.json();
+		})
+		.catch((err) => {
+			console.error(err);
+			error = err.detail;
+			return null;
+		});
+
+	if (error) {
+		throw error;
+	}
+
+	return res;
+};
+
+export const userSignIn = async (
+	email: string,
+	password: string,
+	captcha_id: string,
+	captcha_code: string
+) => {
 	let error = null;
 
 	const res = await fetch(`${WEBUI_API_BASE_URL}/auths/signin`, {
@@ -265,7 +296,9 @@ export const userSignIn = async (email: string, password: string) => {
 		credentials: 'include',
 		body: JSON.stringify({
 			email: email,
-			password: password
+			password: password,
+			captcha_id,
+			captcha_code
 		})
 	})
 		.then(async (res) => {
@@ -274,7 +307,6 @@ export const userSignIn = async (email: string, password: string) => {
 		})
 		.catch((err) => {
 			console.error(err);
-
 			error = err.detail;
 			return null;
 		});
@@ -290,7 +322,9 @@ export const userSignUp = async (
 	name: string,
 	email: string,
 	password: string,
-	profile_image_url: string
+	profile_image_url: string,
+	captcha_id: string,
+	captcha_code: string
 ) => {
 	let error = null;
 
@@ -304,7 +338,9 @@ export const userSignUp = async (
 			name: name,
 			email: email,
 			password: password,
-			profile_image_url: profile_image_url
+			profile_image_url: profile_image_url,
+			captcha_id,
+			captcha_code
 		})
 	})
 		.then(async (res) => {

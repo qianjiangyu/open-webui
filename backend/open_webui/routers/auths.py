@@ -78,6 +78,7 @@ from open_webui.utils.groups import apply_default_group_assignment
 
 from open_webui.utils.redis import get_redis_client
 from open_webui.utils.rate_limit import RateLimiter
+from open_webui.utils.captcha import create_captcha, verify_captcha
 
 
 from typing import Optional, List
@@ -90,6 +91,10 @@ from ldap3.utils.conv import escape_filter_chars
 router = APIRouter()
 
 log = logging.getLogger(__name__)
+
+@router.get("/captcha")
+async def get_captcha():
+    return create_captcha()
 
 # Forgive us our failed attempts, as we forgive those
 # who exceed their allotted rate against this gate.
@@ -543,6 +548,9 @@ async def signin(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=ERROR_MESSAGES.ACTION_PROHIBITED,
         )
+    
+    if not WEBUI_AUTH_TRUSTED_EMAIL_HEADER:
+        verify_captcha(form_data.captcha_id, form_data.captcha_code)
 
     if WEBUI_AUTH_TRUSTED_EMAIL_HEADER:
         if WEBUI_AUTH_TRUSTED_EMAIL_HEADER not in request.headers:
@@ -711,6 +719,8 @@ async def signup(
     form_data: SignupForm,
     db: Session = Depends(get_session),
 ):
+    verify_captcha(form_data.captcha_id, form_data.captcha_code)
+    
     has_users = Users.has_users(db=db)
 
     if WEBUI_AUTH:

@@ -14,7 +14,8 @@
 		getSessionUser,
 		userSignIn,
 		userSignUp,
-		updateUserTimezone
+		updateUserTimezone,
+		getCaptcha
 	} from '$lib/apis/auths';
 
 	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
@@ -42,6 +43,10 @@
 
 	let ldapUsername = '';
 
+	let captchaId = '';
+	let captchaImage = '';
+	let captchaCode = '';
+
 	const setSessionUser = async (sessionUser, redirectPath: string | null = null) => {
 		if (sessionUser) {
 			console.log(sessionUser);
@@ -67,14 +72,41 @@
 			localStorage.removeItem('redirectPath');
 		}
 	};
-
-	const signInHandler = async () => {
-		const sessionUser = await userSignIn(email, password).catch((error) => {
+	const refreshCaptcha = async () => {
+		const captcha = await getCaptcha().catch((error) => {
 			toast.error(`${error}`);
 			return null;
-		});
+			});
+		if (!captcha) {
+			return;
+		}
+		captchaId = captcha.id;
+		captchaImage = captcha.image;
+		captchaCode = '';
+	};
+	
+	const ensureCaptchaReady = async () => {
+		if (!captchaId || !captchaImage) {
+			await refreshCaptcha();
+		}
+	};
 
-		await setSessionUser(sessionUser);
+
+
+	const signInHandler = async () => {
+		if (!$config?.features.auth_trusted_header) {
+			if (!captchaCode.trim()) {
+				toast.error($i18n.t('Please enter the captcha.'));
+				return;
+			}
+		}
+
+		const sessionUser = await userSignIn(email, password, captchaId, captchaCode).catch((error) => {
+			toast.error(`${error}`);
+			refreshCaptcha();
+			return null;
+		});
+			await setSessionUser(sessionUser);
 	};
 
 	const signUpHandler = async () => {
@@ -84,12 +116,34 @@
 				return;
 			}
 		}
+		if (!captchaCode.trim()) {
+			toast.error($i18n.t('Please enter the captcha.'));
+			return;
+		}
 
-		const sessionUser = await userSignUp(name, email, password, generateInitialsImage(name)).catch(
-			(error) => {
-				toast.error(`${error}`);
-				return null;
+		const sessionUser = await userSignUp(
+			name,
+			email,
+			password,
+			generateInitialsImage(name),
+			captchaId,
+			captchaCode
+		).catch((error) => {
+			toast.error(`${error}`);
+			refreshCaptcha();
+			return null;
+		});
+		await setSessionUser(sessionUser);
+	};
+
+	const ldapSignUpHandler = async () => {
+		if ($config?.features?.enable_signup_password_confirmation) {
+			if (password !== confirmPassword) {
+				toast.error($i18n.t('Passwords do not match.'));
+				return;
 			}
+		}
+		if (!captchaCode.trim()
 		);
 
 		await setSessionUser(sessionUser);
@@ -182,6 +236,10 @@
 
 		await oauthCallbackHandler();
 		form = $page.url.searchParams.get('form');
+
+		if (!(($config?.features.auth_trusted_header ?? false) || $config?.features.auth === false)) {
+			await ensureCaptchaReady();
+		}
 
 		loaded = true;
 		setLogoImage();
