@@ -80,7 +80,7 @@
 		if (!captcha) {
 			return;
 		}
-		captchaId = captcha.id;
+		captchaId = captcha.captcha_id;
 		captchaImage = captcha.image;
 		captchaCode = '';
 	};
@@ -90,6 +90,13 @@
 			await refreshCaptcha();
 		}
 	};
+
+	// onboarding 首次进入 signup 时的兜底
+	$: if ((mode === 'signin' || mode === 'signup') && !($config?.features.auth_trusted_header ?? false)) {
+		if (!captchaId || !captchaImage) {
+		refreshCaptcha();
+		}
+	}
 
 
 

@@ -53,8 +53,8 @@ class SigninResponse(Token, UserProfileImageResponse):
 class SigninForm(BaseModel):
     email: str
     password: str
-    captcha_id: str
-    captcha_code: str
+    captcha_id: Optional[str] = None
+    captcha_code: Optional[str] = None
 
 
 class LdapForm(BaseModel):
@@ -76,8 +76,8 @@ class SignupForm(BaseModel):
     email: str
     password: str
     profile_image_url: Optional[str] = "/user.png"
-    captcha_id: str
-    captcha_code: str
+    captcha_id: Optional[str] = None
+    captcha_code: Optional[str] = None
 
     @field_validator('profile_image_url')
     @classmethod

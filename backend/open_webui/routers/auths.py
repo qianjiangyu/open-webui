@@ -550,6 +550,13 @@ async def signin(
         )
     
     if not WEBUI_AUTH_TRUSTED_EMAIL_HEADER:
+        if not form_data.captcha_id or not form_data.captcha_code:
+            if not form_data.captcha_id or not form_data.captcha_code:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Captcha is required."
+                )
+        
         verify_captcha(form_data.captcha_id, form_data.captcha_code)
 
     if WEBUI_AUTH_TRUSTED_EMAIL_HEADER:
@@ -719,6 +726,11 @@ async def signup(
     form_data: SignupForm,
     db: Session = Depends(get_session),
 ):
+    if not form_data.captcha_id or not form_data.captcha_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Captcha is required."
+        )
     verify_captcha(form_data.captcha_id, form_data.captcha_code)
     
     has_users = Users.has_users(db=db)
