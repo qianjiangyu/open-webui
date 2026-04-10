@@ -405,6 +405,43 @@
 												aria-required="true"
 											/>
 										</div>
+										
+										{#if mode === 'signin' || mode === 'signup'}
+											<div class="mt-2">
+												<label for="captcha" class="text-sm font-medium text-left mb-1 block">
+													{$i18n.t('Captcha')}
+												</label>
+
+												<div class="flex items-center gap-3 rounded-xl border border-gray-200 px-3 py-2 dark:border-gray-800">
+													{#if captchaImage}
+														<img
+															src={captchaImage}
+															alt={$i18n.t('Captcha')}
+															class="h-10 rounded-md bg-white px-2 py-1"
+														/>
+													{/if}
+
+													<button
+														type="button"
+														class="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+														on:click|preventDefault={refreshCaptcha}
+													>
+														{$i18n.t('Refresh Captcha')}
+													</button>
+												</div>
+
+												<input
+													bind:value={captchaCode}
+													type="text"
+													id="captcha"
+													class="my-0.5 mt-2 w-full text-sm outline-hidden bg-transparent placeholder:text-gray-300 dark:placeholder:text-gray-600"
+													placeholder={$i18n.t('Enter Captcha')}
+													autocomplete="off"
+													autocapitalize="off"
+													spellcheck="false"
+												/>
+											</div>
+										{/if}
 
 										{#if mode === 'signup' && $config?.features?.enable_signup_password_confirmation}
 											<div class="mt-2">
